@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>My Bookings</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>My Bookings</h2>
+            <div>
+                <a href="/conferences" class="btn btn-primary me-2">View Conferences</a>
+                <a href="/" class="btn btn-outline-secondary">Back to Home</a>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div th:if="${message}" class="alert alert-success" role="alert">
+            <span th:text="${message}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-danger" role="alert">
+            <span th:text="${error}"></span>
+        </div>
+
+        <!-- Active Bookings Section -->
+        <div id="active-bookings" th:if="${userBookings.?[status == T(com.example.conferencebooking.entity.BookingStatus).CONFIRMED or status == T(com.example.conferencebooking.entity.BookingStatus).PROCESSING].size() > 0}" class="mb-5">
+            <h3 class="mb-4">Active Bookings</h3>
+            <div class="row">
+                <div th:each="booking : ${userBookings}" 
+                     th:if="${booking.status == T(com.example.conferencebooking.entity.BookingStatus).CONFIRMED 
+                             or booking.status == T(com.example.conferencebooking.entity.BookingStatus).PROCESSING}"
+                     class="col-md-6 mb-4">
+                    <div class="card border-success" th:data-booking-id="${booking.id}">
+                        <div class="card-body">
+                            <h5 class="card-title" th:text="${booking.conference.name}">Conference Name</h5>
+                            <p class="card-text">
+                                <strong>Location:</strong> <span th:text="${booking.conference.location}"></span><br>
+                                <strong>Start:</strong> <span th:text="${#temporals.format(booking.conference.startTimestamp, 'dd-MM-yyyy HH:mm')}"></span><br>
+                                <strong>End:</strong> <span th:text="${#temporals.format(booking.conference.endTimestamp, 'dd-MM-yyyy HH:mm')}"></span><br>
+                                <strong>Booking Status:</strong> 
+                                <span th:class="${booking.status == T(com.example.conferencebooking.entity.BookingStatus).PROCESSING ? 'badge bg-warning text-dark' : 'badge bg-success'}"
+                                      th:text="${booking.status}">Status</span>
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button th:if="${booking.status == T(com.example.conferencebooking.entity.BookingStatus).PROCESSING}"
+                                        class="btn btn-success booking-action-btn"
+                                        th:data-action="confirm"
+                                        th:data-booking-id="${booking.id}">
+                                    Confirm Booking
+                                </button>
+                                <button class="btn btn-danger booking-action-btn"
+                                        th:data-action="cancel"
+                                        th:data-booking-id="${booking.id}">
+                                    Cancel Booking
+                                </button>
+                            </div>
+                            <div th:id="'error-' + ${booking.id}" class="error-message" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waitlisted Bookings Section -->
+        <div id="waitlisted-bookings" th:if="${userBookings.?[status == T(com.example.conferencebooking.entity.BookingStatus).WAITLISTED].size() > 0}" class="mb-5">
+            <h3 class="mb-4">Waitlisted Bookings</h3>
+            <div class="row">
+                <div th:each="booking : ${userBookings}" 
+                     th:if="${booking.status == T(com.example.conferencebooking.entity.BookingStatus).WAITLISTED}"
+                     class="col-md-6 mb-4">
+                    <div class="card border-warning" th:data-booking-id="${booking.id}">
+                        <div class="card-body">
+                            <h5 class="card-title" th:text="${booking.conference.name}">Conference Name</h5>
+                            <p class="card-text">
+                                <strong>Location:</strong> <span th:text="${booking.conference.location}"></span><br>
+                                <strong>Start:</strong> <span th:text="${#temporals.format(booking.conference.startTimestamp, 'dd-MM-yyyy HH:mm')}"></span><br>
+                                <strong>End:</strong> <span th:text="${#temporals.format(booking.conference.endTimestamp, 'dd-MM-yyyy HH:mm')}"></span><br>
+                                <strong>Booking Status:</strong> 
+                                <span class="badge bg-warning text-dark">Waitlisted</span>
+                            </p>
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-danger booking-action-btn"
+                                        th:data-action="cancel"
+                                        th:data-booking-id="${booking.id}">
+                                    Cancel Booking
+                                </button>
+                            </div>
+                            <div th:id="'error-' + ${booking.id}" class="error-message" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cancelled Bookings Section -->
+        <div th:if="${!#lists.isEmpty(userBookings)}" class="mb-5">
+            <h3 class="mb-4">Cancelled Bookings</h3>
+            <div class="row">
+                <div th:each="booking : ${userBookings}" 
+                     th:if="${booking.status == T(com.example.conferencebooking.entity.BookingStatus).CANCELLED}"
+                     class="col-md-6 mb-4">
+                    <div class="card border-secondary">
+                        <div class="card-body">
+                            <h5 class="card-title" th:text="${booking.conference.name}">Conference Name</h5>
+                            <p class="card-text">
+                                <strong>Location:</strong> <span th:text="${booking.conference.location}"></span><br>
+                                <strong>Start:</strong> <span th:text="${#temporals.format(booking.conference.startTimestamp, 'dd-MM-yyyy HH:mm')}"></span><br>
+                                <strong>End:</strong> <span th:text="${#temporals.format(booking.conference.endTimestamp, 'dd-MM-yyyy HH:mm')}"></span><br>
+                                <strong>Booking Status:</strong> <span class="badge bg-secondary">Cancelled</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('.container').addEventListener('click', async function(event) {
+            const button = event.target.closest('.booking-action-btn');
+            if (!button) return;
+            
+            const bookingId = button.getAttribute('data-booking-id');
+            const action = button.getAttribute('data-action');
+            
+            try {
+                let response;
+                button.disabled = true;
+                
+                if (action === 'confirm') {
+                    response = await fetch(`/api/bookings/${bookingId}/confirm`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin'
+                    });
+                } else if (action === 'cancel') {
+                    response = await fetch(`/api/bookings/cancel/${bookingId}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin'
+                    });
+                }
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
+                }
+                
+                if (action === 'cancel') {
+                    moveToSection(button, 'cancelled');
+                } else if (action === 'confirm') {
+                    const card = button.closest('.card');
+                    card.classList.remove('border-warning');
+                    card.classList.add('border-success');
+                    const statusBadge = card.querySelector('.badge');
+                    if (statusBadge) {
+                        statusBadge.className = 'badge bg-success';
+                        statusBadge.textContent = 'CONFIRMED';
+                    }
+                    // Remove the confirm button but keep the cancel button
+                    button.remove();
+                    showSuccess(bookingId, 'Booking confirmed successfully');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                button.disabled = false;
+                showError(bookingId, error.message || 'Failed to process request');
+            }
+        });
+
+        function showError(bookingId, message) {
+            const errorDiv = document.getElementById(`error-${bookingId}`);
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                setTimeout(() => errorDiv.style.display = 'none', 3000);
+            }
+        }
+
+        function showSuccess(bookingId, message) {
+            const card = document.querySelector(`[data-booking-id="${bookingId}"]`);
+            if (card) {
+                const successDiv = document.createElement('div');
+                successDiv.className = 'alert alert-success mt-2';
+                successDiv.textContent = message;
+                card.querySelector('.card-body').appendChild(successDiv);
+                setTimeout(() => successDiv.remove(), 3000);
+            }
+        }
+
+        function moveToSection(button, section) {
+            const bookingColumn = button.closest('.col-md-6');
+            const cancelledSection = document.querySelector('.container > div:has(> h3:contains("Cancelled Bookings"))');
+            const targetRow = cancelledSection ? cancelledSection.querySelector('.row') : null;
+            
+            if (bookingColumn && targetRow) {
+                const card = bookingColumn.querySelector('.card');
+                card.classList.remove('border-success', 'border-warning');
+                card.classList.add('border-secondary');
+                
+                const statusSpan = card.querySelector('.card-text .badge');
+                if (statusSpan) {
+                    statusSpan.className = 'badge bg-secondary';
+                    statusSpan.textContent = 'Cancelled';
+                }
+                
+                const buttonContainer = card.querySelector('.d-flex');
+                if (buttonContainer) {
+                    buttonContainer.remove();
+                }
+                
+                bookingColumn.style.transition = 'opacity 0.3s';
+                bookingColumn.style.opacity = '0';
+                
+                setTimeout(() => {
+                    targetRow.appendChild(bookingColumn);
+                    bookingColumn.style.opacity = '1';
+                    
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'alert alert-success mt-2';
+                    successDiv.textContent = 'Booking cancelled successfully';
+                    card.appendChild(successDiv);
+                    
+                    setTimeout(() => {
+                        if (successDiv.parentNode) {
+                            successDiv.remove();
+                        }
+                    }, 3000);
+                }, 300);
+                
+                const originalSection = button.closest('[id$="-bookings"]');
+                if (originalSection && originalSection.querySelector('.row').children.length === 1) {
+                    originalSection.remove();
+                }
+            }
+        }
+    });
+    </script>
+
+    <style>
+    .error-message {
+        color: #dc3545;
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+    }
+
+    .booking-status.processing {
+        background-color: #fff3cd;
+        border-color: #ffeeba;
+    }
+
+    .confirmation-info {
+        margin-top: 10px;
+    }
+
+    .confirm-button {
+        background-color: #28a745;
+        color: white;
+        padding: 5px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .confirm-button:hover {
+        background-color: #218838;
+    }
+
+    /* Add styles for disabled button */
+    .btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .text-muted.small {
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+    </style>
+</body>
+</html> 
