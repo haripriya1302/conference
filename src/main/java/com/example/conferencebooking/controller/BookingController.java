@@ -103,11 +103,6 @@ public class BookingController {
             Booking booking = bookingService.getBooking(id);
             Conference conference = conferenceService.getConference(booking.getConferenceId());
 
-            if (!booking.getUserId().equals(user.getId())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "You are not authorized to cancel this booking"));
-            }
-
             if (LocalDateTime.now().isAfter(conference.getStartTimestamp())) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "Cannot cancel booking after conference has started"));
@@ -137,50 +132,50 @@ public class BookingController {
     @PostMapping("/api/bookings/{id}/confirm")
     @ResponseBody
     public ResponseEntity<BookingConfirmationResponse> confirmBooking(@PathVariable String id, HttpSession session) {
-        try {
-            User user = (User) session.getAttribute("user");
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(BookingConfirmationResponse.builder()
-                        .success(false)
-                        .message("Please login to confirm booking")
-                        .build());
-            }
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(BookingConfirmationResponse.builder()
+                    .success(false)
+                    .message("Please login to confirm booking")
+                    .bookingId(id)
+                    .build());
+        }
 
+        try {
             Booking booking = bookingService.getBooking(id);
             if (!booking.getUserId().equals(user.getId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(BookingConfirmationResponse.builder()
                         .success(false)
                         .message("Not authorized to confirm this booking")
+                        .bookingId(id)
                         .build());
             }
 
-            try {
-                Booking confirmedBooking = bookingService.confirmWaitlistBooking(id);
-                return ResponseEntity.ok(BookingConfirmationResponse.builder()
-                    .success(true)
-                    .message("Booking confirmed successfully")
-                    .status(confirmedBooking.getStatus())
-                    .bookingId(confirmedBooking.getId())
+            Booking confirmedBooking = bookingService.confirmWaitlistBooking(id);
+            return ResponseEntity.ok(BookingConfirmationResponse.builder()
+                .success(true)
+                .message("Booking confirmed successfully")
+                .status(confirmedBooking.getStatus())
+                .bookingId(confirmedBooking.getId())
+                .build());
+
+        } catch (ValidationException e) {
+            return ResponseEntity.badRequest()
+                .body(BookingConfirmationResponse.builder()
+                    .success(false)
+                    .message(e.getMessage())
+                    .status(bookingService.getBooking(id).getStatus())
+                    .bookingId(id)
+                    .reason("Validation failed")
                     .build());
-            } catch (ValidationException e) {
-                booking = bookingService.getBooking(id);
-                return ResponseEntity.badRequest()
-                    .body(BookingConfirmationResponse.builder()
-                        .success(false)
-                        .message(e.getMessage())
-                        .status(booking.getStatus())
-                        .bookingId(id)
-                        .reason("Confirmation time expired - Moved back to waitlist")
-                        .build());
-            }
         } catch (Exception e) {
-            log.error("Error confirming booking {}: {}", id, e.getMessage(), e);
+            log.error("Error confirming booking {}: {}", id, e.getMessage());
             return ResponseEntity.internalServerError()
                 .body(BookingConfirmationResponse.builder()
                     .success(false)
-                    .message("Failed to confirm booking: " + e.getMessage())
+                    .message("Failed to confirm booking")
                     .bookingId(id)
                     .build());
         }

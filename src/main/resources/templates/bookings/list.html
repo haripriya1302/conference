@@ -193,8 +193,10 @@
 
         function moveToSection(button, section) {
             const bookingColumn = button.closest('.col-md-6');
-            const cancelledSection = document.querySelector('.container > div:has(> h3:contains("Cancelled Bookings"))');
-            const targetRow = cancelledSection ? cancelledSection.querySelector('.row') : null;
+            const cancelledSection = Array.from(document.querySelectorAll('.container > div > h3'))
+                .find(h3 => h3.textContent.includes('Cancelled Bookings'))
+                ?.closest('div');
+            const targetRow = cancelledSection?.querySelector('.row');
             
             if (bookingColumn && targetRow) {
                 const card = bookingColumn.querySelector('.card');
